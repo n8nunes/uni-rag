@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.core.logger import audit_logger
 from app.api.documents import router as doc_router
-
+from app.api.search import router as search_router
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -25,3 +25,4 @@ async def health_check():
     return {"status": "healthy", "architecture": "hybrid-cloud-ready"}
 
 app.include_router(doc_router, prefix=settings.API_V1_STR)
+app.include_router(search_router, prefix=settings.API_V1_STR)
