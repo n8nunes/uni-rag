@@ -2,6 +2,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.core.logger import audit_logger
+from app.api.documents import router as doc_router
+
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -21,3 +23,5 @@ app.add_middleware(
 async def health_check():
     audit_logger.info("Health check endpoint evaluated successfully.")
     return {"status": "healthy", "architecture": "hybrid-cloud-ready"}
+
+app.include_router(doc_router, prefix=settings.API_V1_STR)
