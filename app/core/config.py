@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     
     # Local service routing. In Docker/Kubernetes, Ollama normally runs on the host.
     OLLAMA_BASE_URL: str = "http://host.docker.internal:11434"
-    OLLAMA_MODEL: str = "llama3"
+    OLLAMA_MODEL: str = "llama3.1"
     OLLAMA_EMBEDDING_MODEL: str = "nomic-embed-text"
     VECTOR_DB_URL: str = "http://localhost:6333"
     QDRANT_COLLECTION: str = "university_documents"
