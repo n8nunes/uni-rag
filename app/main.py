@@ -22,7 +22,7 @@ app.add_middleware(
 @app.get("/health", tags=["Infrastructure"])
 async def health_check():
     audit_logger.info("Health check endpoint evaluated successfully.")
-    return {"status": "healthy", "architecture": "hybrid-cloud-ready"}
+    return {"status": "healthy", "architecture": "local-kubernetes-ready"}
 
 app.include_router(doc_router, prefix=settings.API_V1_STR)
 app.include_router(search_router, prefix=settings.API_V1_STR)

@@ -34,7 +34,7 @@ class DocumentProcessor:
                 chunks.append({
                     "text": chunk_text,
                     # Crucial: Deep copy metadata attributes to each vector candidate
-                    "metadata": metadata.dict()
+                    "metadata": metadata.model_dump(mode="json")
                 })
                 
         return chunks

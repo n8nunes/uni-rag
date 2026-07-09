@@ -5,6 +5,7 @@ from app.core.logger import audit_logger
 class OllamaClient:
     def __init__(self):
         self.client_url = f"{settings.OLLAMA_BASE_URL}/api/generate"
+        self.embedding_url = f"{settings.OLLAMA_BASE_URL}/api/embeddings"
 
     async def generate_response(self, prompt: str, context: str) -> str:
         """
@@ -18,7 +19,7 @@ class OllamaClient:
         )
 
         payload = {
-            "model": "llama3", # or mistral, phi3, gemma, etc.
+            "model": settings.OLLAMA_MODEL,
             "prompt": f"{system_instructions}\n\nUser Question: {prompt}",
             "stream": False
         }
@@ -32,5 +33,19 @@ class OllamaClient:
         except httpx.ConnectError:
             audit_logger.error("Failed to connect to Ollama. Verify the service is running locally.")
             return "AI Engine is currently unreachable. Please verify local environment status."
+
+    async def embed_text(self, text: str) -> list[float]:
+        payload = {
+            "model": settings.OLLAMA_EMBEDDING_MODEL,
+            "prompt": text,
+        }
+
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.post(self.embedding_url, json=payload)
+            response.raise_for_status()
+            embedding = response.json().get("embedding")
+            if not embedding:
+                raise RuntimeError("Ollama returned an empty embedding.")
+            return embedding
 
 ollama_client = OllamaClient()

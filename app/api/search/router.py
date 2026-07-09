@@ -1,32 +1,26 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from app.models.schemas import UserSession, ClassificationEnum
+from app.models.schemas import SearchRequest, SearchResponse, SourceReference, UserSession
 from app.services.vector_db import vector_db
 from app.services.ollama_client import ollama_client
 from app.core.logger import audit_logger
+from app.api.dependencies import get_current_user
 
 router = APIRouter(prefix="/search", tags=["Secure RAG Engine"])
 
-# Re-using our mock auth dependency
-async def get_current_user() -> UserSession:
-    return UserSession(
-        user_id="user_dev_01",
-        username="norman_student",
-        role="student",
-        clearance_level=ClassificationEnum.STUDENT_ONLY
-    )
-
-@router.post("/query")
+@router.post("/query", response_model=SearchResponse)
 async def secure_rag_query(
-    query: str, 
+    request: SearchRequest,
     current_user: UserSession = Depends(get_current_user)
 ):
+    query = request.query
     if not query.strip():
         raise HTTPException(status_code=400, detail="Query string cannot be blank.")
 
     # 1. Fetch data from Vector Database applying server-enforced clearance filters
     authorized_chunks = await vector_db.secure_similarity_search(
         query=query, 
-        user_clearance=current_user.clearance_level
+        user_clearance=current_user.clearance_level,
+        top_k=request.top_k,
     )
     
     if not authorized_chunks:
@@ -45,7 +39,7 @@ async def secure_rag_query(
                 "event": "DATA_RETRIEVAL_QUERY",
                 "operator": current_user.user_id,
                 "clearance_level_used": current_user.clearance_level,
-                "sources_accessed": [c["metadata"]["source_file"] for c in authorized_chunks]
+        "sources_accessed": [c["metadata"]["source_file"] for c in authorized_chunks]
             }
         }
     )
@@ -54,5 +48,12 @@ async def secure_rag_query(
         "query": query,
         "response": ai_response,
         "access_clearance_applied": current_user.clearance_level,
-        "sources_consulted": [c["metadata"]["source_file"] for c in authorized_chunks]
+        "sources_consulted": [
+            SourceReference(
+                source_file=c["metadata"]["source_file"],
+                classification=c["metadata"]["classification"],
+                score=c.get("score"),
+            )
+            for c in authorized_chunks
+        ],
     }

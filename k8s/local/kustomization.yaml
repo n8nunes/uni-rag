@@ -1,0 +1,7 @@
+resources:
+  - namespace.yaml
+  - configmap.yaml
+  - qdrant.yaml
+  - backend.yaml
+  - frontend.yaml
+  - policies.yaml
