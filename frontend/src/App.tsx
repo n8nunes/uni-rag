@@ -1,5 +1,5 @@
 import { FormEvent, useMemo, useState } from "react";
-import { FileUp, Files, LockKeyhole, Send, ShieldCheck } from "lucide-react";
+import { FileUp, Files, LockKeyhole, PlusCircle, Send, ShieldCheck } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import "./styles.css";
@@ -69,6 +69,12 @@ function App() {
     } finally {
       setBusy(false);
     }
+  }
+
+  function startNewChat() {
+    setConversation([]);
+    setSources([]);
+    setStatus("Started a new chat. Your uploaded documents remain available.");
   }
 
   async function sendMessage(event: FormEvent) {
@@ -157,9 +163,15 @@ function App() {
         </form>
 
         <section className="panel answerPanel">
-          <div className="panelHeader">
-            <LockKeyhole size={20} />
-            <h2>Authorized Answer</h2>
+          <div className="panelHeader panelHeaderBetween">
+            <div className="panelHeader">
+              <LockKeyhole size={20} />
+              <h2>Authorized Answer</h2>
+            </div>
+            <button type="button" className="secondaryButton" onClick={startNewChat}>
+              <PlusCircle size={16} />
+              New chat
+            </button>
           </div>
 
           <div className="controlRow">

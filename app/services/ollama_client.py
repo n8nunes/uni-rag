@@ -1,4 +1,5 @@
 import httpx
+from urllib.parse import quote
 from app.core.config import settings
 from app.core.logger import audit_logger
 
@@ -6,6 +7,36 @@ class OllamaClient:
     def __init__(self):
         self.client_url = f"{settings.OLLAMA_BASE_URL}/api/generate"
         self.embedding_url = f"{settings.OLLAMA_BASE_URL}/api/embeddings"
+
+    async def _get_web_research(self, query: str) -> str:
+        try:
+            async with httpx.AsyncClient(timeout=8.0) as client:
+                response = await client.get(
+                    "https://api.duckduckgo.com/",
+                    params={"q": query, "format": "json", "no_redirect": 1, "no_html": 1},
+                )
+                response.raise_for_status()
+                payload = response.json()
+        except Exception as exc:
+            audit_logger.warning(f"Web research lookup failed: {exc}")
+            return ""
+
+        snippets: list[str] = []
+        abstract = payload.get("AbstractText")
+        if abstract:
+            snippets.append(f"Summary: {abstract}")
+
+        for topic in payload.get("RelatedTopics", [])[:4]:
+            if isinstance(topic, dict):
+                text = topic.get("Text")
+                first_url = topic.get("FirstURL")
+                if text:
+                    entry = text.strip()
+                    if first_url:
+                        entry = f"{entry} ({first_url})"
+                    snippets.append(entry)
+
+        return "\n".join(snippets[:6])
 
     async def generate_response(self, prompt: str, context: str, conversation_history: list[dict] | None = None) -> str:
         """
@@ -22,11 +53,18 @@ class OllamaClient:
             if history_lines:
                 history_block = "Conversation history:\n" + "\n".join(history_lines) + "\n\n"
 
+        web_research = await self._get_web_research(prompt)
+        research_block = ""
+        if web_research:
+            research_block = f"Web research findings:\n{web_research}\n\n"
+
         system_instructions = (
             "You are an enterprise AI assistant. Answer the user's question using ONLY "
-            "the provided authorized document context. If the context doesn't contain the answer, "
-            "state clearly that you do not have permission or context to answer.\n\n"
+            "the provided authorized document context, but if the question requires broader or current information, "
+            "use the web research findings as supplemental context. If neither the document context nor web research "
+            "contains enough information, state clearly that you do not have permission or context to answer.\n\n"
             f"{history_block}"
+            f"{research_block}"
             f"Context:\n{context}"
         )
 
