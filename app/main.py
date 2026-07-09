@@ -2,8 +2,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.core.logger import audit_logger
-from app.api.documents import router as doc_router
-from app.api.search import router as search_router
+from app.api.documents.router import router as doc_router
+from app.api.search.router import router as search_router
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
