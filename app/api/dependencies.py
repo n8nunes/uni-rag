@@ -4,10 +4,10 @@ from app.models.schemas import ClassificationEnum, UserSession
 
 
 async def get_current_user(
-    x_user_id: str = Header(default="user_dev_01"),
-    x_username: str = Header(default="local_student"),
-    x_user_role: str = Header(default="student"),
-    x_user_clearance: ClassificationEnum = Header(default=ClassificationEnum.STUDENT_ONLY),
+    x_user_id: str = Header(default="workplace_admin"),
+    x_username: str = Header(default="admin_user"),
+    x_user_role: str = Header(default="admin"),
+    x_user_clearance: ClassificationEnum = Header(default=ClassificationEnum.SENSITIVE),
 ) -> UserSession:
     """
     Local development auth shim.

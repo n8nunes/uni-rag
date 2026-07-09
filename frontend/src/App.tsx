@@ -6,7 +6,7 @@ import "./styles.css";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000/api/v1";
 
-type Classification = "Public" | "Student-Only" | "Restricted-Internal";
+type Classification = "General" | "Restricted" | "Sensitive";
 
 type Source = {
   source_file: string;
@@ -22,8 +22,8 @@ type Message = {
 
 function App() {
   const [files, setFiles] = useState<File[]>([]);
-  const [classification, setClassification] = useState<Classification>("Student-Only");
-  const [clearance, setClearance] = useState<Classification>("Student-Only");
+  const [classification, setClassification] = useState<Classification>("General");
+  const [clearance, setClearance] = useState<Classification>("Sensitive");
   const [chatInput, setChatInput] = useState("");
   const [sources, setSources] = useState<Source[]>([]);
   const [conversation, setConversation] = useState<Message[]>([]);
@@ -34,8 +34,8 @@ function App() {
   const headers = useMemo(
     () => ({
       "X-User-Clearance": clearance,
-      "X-User-Role": clearance === "Restricted-Internal" ? "faculty" : "student",
-      "X-User-Id": "local_portfolio_user",
+      "X-User-Role": "admin",
+      "X-User-Id": "workplace_admin",
     }),
     [clearance],
   );
@@ -149,11 +149,11 @@ function App() {
             </div>
           )}
           <label>
-            Classification
+            Document classification
             <select value={classification} onChange={(event) => setClassification(event.target.value as Classification)}>
-              <option>Public</option>
-              <option>Student-Only</option>
-              <option>Restricted-Internal</option>
+              <option>General</option>
+              <option>Restricted</option>
+              <option>Sensitive</option>
             </select>
           </label>
           <button disabled={busy || files.length === 0}>
@@ -176,11 +176,11 @@ function App() {
 
           <div className="controlRow">
             <label>
-              Active clearance
+              Access level
               <select value={clearance} onChange={(event) => setClearance(event.target.value as Classification)}>
-                <option>Public</option>
-                <option>Student-Only</option>
-                <option>Restricted-Internal</option>
+                <option>General</option>
+                <option>Restricted</option>
+                <option>Sensitive</option>
               </select>
             </label>
           </div>

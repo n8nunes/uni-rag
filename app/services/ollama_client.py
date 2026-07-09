@@ -1,5 +1,4 @@
 import httpx
-from urllib.parse import quote
 from app.core.config import settings
 from app.core.logger import audit_logger
 
@@ -38,7 +37,13 @@ class OllamaClient:
 
         return "\n".join(snippets[:6])
 
-    async def generate_response(self, prompt: str, context: str, conversation_history: list[dict] | None = None) -> str:
+    async def generate_response(
+        self,
+        prompt: str,
+        context: str,
+        conversation_history: list[dict] | None = None,
+        allow_web_research: bool = False,
+    ) -> str:
         """
         Sends the isolated context along with the user prompt to the local LLM.
         """
@@ -53,16 +58,19 @@ class OllamaClient:
             if history_lines:
                 history_block = "Conversation history:\n" + "\n".join(history_lines) + "\n\n"
 
-        web_research = await self._get_web_research(prompt)
+        web_research = ""
+        if allow_web_research:
+            web_research = await self._get_web_research(prompt)
         research_block = ""
         if web_research:
             research_block = f"Web research findings:\n{web_research}\n\n"
 
         system_instructions = (
             "You are an enterprise AI assistant. Answer the user's question using ONLY "
-            "the provided authorized document context, but if the question requires broader or current information, "
-            "use the web research findings as supplemental context. If neither the document context nor web research "
-            "contains enough information, state clearly that you do not have permission or context to answer.\n\n"
+            "the provided authorized document context, but if the question requires broader or current information and "
+            "web research is permitted, use the web research findings as supplemental context. If neither the document "
+            "context nor permitted web research contains enough information, state clearly that you do not have permission "
+            "or context to answer.\n\n"
             f"{history_block}"
             f"{research_block}"
             f"Context:\n{context}"

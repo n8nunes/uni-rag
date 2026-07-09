@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
-from app.models.schemas import SearchRequest, SearchResponse, SourceReference, UserSession
+from app.models.schemas import ClassificationEnum, SearchRequest, SearchResponse, SourceReference, UserSession
 from app.services.vector_db import vector_db
 from app.services.ollama_client import ollama_client
 from app.core.logger import audit_logger
@@ -20,6 +20,7 @@ async def secure_rag_query(
         query=query,
         user_clearance=current_user.clearance_level,
         top_k=request.top_k,
+        user_role=current_user.role,
     )
 
     if not authorized_chunks:
@@ -28,10 +29,15 @@ async def secure_rag_query(
         context_payload = "\n".join([chunk["text"] for chunk in authorized_chunks])
 
     history_payload = [message.model_dump() for message in request.history]
+    allow_web_research = bool(authorized_chunks) and all(
+        str(chunk.get("metadata", {}).get("classification", "")).lower() == ClassificationEnum.GENERAL.value.lower()
+        for chunk in authorized_chunks
+    )
     ai_response = await ollama_client.generate_response(
         prompt=query,
         context=context_payload,
         conversation_history=history_payload,
+        allow_web_research=allow_web_research,
     )
 
     audit_logger.info(

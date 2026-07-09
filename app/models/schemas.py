@@ -4,9 +4,9 @@ from datetime import datetime
 from typing import List
 
 class ClassificationEnum(str, Enum):
-    PUBLIC = "Public"
-    RESTRICTED = "Restricted-Internal"
-    STUDENT_ONLY = "Student-Only"
+    GENERAL = "General"
+    RESTRICTED = "Restricted"
+    SENSITIVE = "Sensitive"
 
 class UserSession(BaseModel):
     user_id: str

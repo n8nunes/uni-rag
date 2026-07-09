@@ -65,22 +65,23 @@ class VectorDBService:
         return True
 
     async def secure_similarity_search(
-        self, 
-        query: str, 
+        self,
+        query: str,
         user_clearance: ClassificationEnum,
         top_k: int = 5,
+        user_role: str | None = None,
     ) -> List[Dict[str, Any]]:
         """
         Executes a vector search heavily restricted by a server-enforced metadata filter.
         """
-        # Define strict scope based on security classification clearance
-        # Public users see Public. Student-Only sees Public + Student-Only, etc.
-        allowed_classifications = [ClassificationEnum.PUBLIC]
-        
-        if user_clearance == ClassificationEnum.STUDENT_ONLY:
-            allowed_classifications.append(ClassificationEnum.STUDENT_ONLY)
-        elif user_clearance == ClassificationEnum.RESTRICTED:
-            allowed_classifications.extend([ClassificationEnum.STUDENT_ONLY, ClassificationEnum.RESTRICTED])
+        if user_role == "admin":
+            allowed_classifications = [ClassificationEnum.GENERAL, ClassificationEnum.RESTRICTED, ClassificationEnum.SENSITIVE]
+        else:
+            allowed_classifications = [ClassificationEnum.GENERAL]
+            if user_clearance == ClassificationEnum.RESTRICTED:
+                allowed_classifications.append(ClassificationEnum.RESTRICTED)
+            elif user_clearance == ClassificationEnum.SENSITIVE:
+                allowed_classifications.extend([ClassificationEnum.RESTRICTED, ClassificationEnum.SENSITIVE])
 
         query_vector = await ollama_client.embed_text(query)
 

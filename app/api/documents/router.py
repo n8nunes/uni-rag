@@ -22,17 +22,14 @@ async def upload_document(
             detail="At least one document must be uploaded.",
         )
 
-    # Enforce Governance Check: Users cannot tag documents above their clearance level
-    if (current_user.clearance_level == ClassificationEnum.STUDENT_ONLY and 
-        classification == ClassificationEnum.RESTRICTED):
-        
+    if current_user.role != "admin" and classification != ClassificationEnum.GENERAL:
         audit_logger.warning(
-            f"Privilege escalation attempt blocked.",
-            extra={"extra_context": {"user": current_user.user_id, "attempted_target": classification}}
+            "Privilege escalation attempt blocked.",
+            extra={"extra_context": {"user": current_user.user_id, "attempted_target": classification}},
         )
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Authorization Failure: Target classification exceeds user clearance parameters."
+            detail="Authorization Failure: Only workplace admins can upload restricted or sensitive documents.",
         )
 
     processed_results = []
