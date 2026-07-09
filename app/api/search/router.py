@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException
 from app.models.schemas import SearchRequest, SearchResponse, SourceReference, UserSession
 from app.services.vector_db import vector_db
 from app.services.ollama_client import ollama_client
@@ -16,32 +16,34 @@ async def secure_rag_query(
     if not query.strip():
         raise HTTPException(status_code=400, detail="Query string cannot be blank.")
 
-    # 1. Fetch data from Vector Database applying server-enforced clearance filters
     authorized_chunks = await vector_db.secure_similarity_search(
-        query=query, 
+        query=query,
         user_clearance=current_user.clearance_level,
         top_k=request.top_k,
     )
-    
+
     if not authorized_chunks:
         context_payload = "No authorized context found for this user clearance profile."
     else:
         context_payload = "\n".join([chunk["text"] for chunk in authorized_chunks])
 
-    # 2. Pipe the isolated payload directly to the local LLM instance
-    ai_response = await ollama_client.generate_response(prompt=query, context=context_payload)
+    history_payload = [message.model_dump() for message in request.history]
+    ai_response = await ollama_client.generate_response(
+        prompt=query,
+        context=context_payload,
+        conversation_history=history_payload,
+    )
 
-    # 3. SOC 2 Audit Event tracking data access
     audit_logger.info(
-        f"RAG inquiry completed.",
+        "RAG inquiry completed.",
         extra={
             "extra_context": {
                 "event": "DATA_RETRIEVAL_QUERY",
                 "operator": current_user.user_id,
                 "clearance_level_used": current_user.clearance_level,
-        "sources_accessed": [c["metadata"]["source_file"] for c in authorized_chunks]
+                "sources_accessed": [c["metadata"]["source_file"] for c in authorized_chunks],
             }
-        }
+        },
     )
 
     return {

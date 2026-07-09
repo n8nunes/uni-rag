@@ -1,5 +1,5 @@
 import { FormEvent, useMemo, useState } from "react";
-import { FileUp, Files, LockKeyhole, Search, ShieldCheck } from "lucide-react";
+import { FileUp, Files, LockKeyhole, Send, ShieldCheck } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import "./styles.css";
@@ -24,8 +24,7 @@ function App() {
   const [files, setFiles] = useState<File[]>([]);
   const [classification, setClassification] = useState<Classification>("Student-Only");
   const [clearance, setClearance] = useState<Classification>("Student-Only");
-  const [query, setQuery] = useState("");
-  const [answer, setAnswer] = useState("");
+  const [chatInput, setChatInput] = useState("");
   const [sources, setSources] = useState<Source[]>([]);
   const [conversation, setConversation] = useState<Message[]>([]);
   const [availableFiles, setAvailableFiles] = useState<string[]>([]);
@@ -72,16 +71,18 @@ function App() {
     }
   }
 
-  async function searchDocuments(event: FormEvent) {
+  async function sendMessage(event: FormEvent) {
     event.preventDefault();
-    const trimmedQuery = query.trim();
-    if (!trimmedQuery) return;
+    const trimmedInput = chatInput.trim();
+    if (!trimmedInput) return;
 
     setBusy(true);
     setStatus("Running metadata-filtered vector search, then asking local Ollama.");
 
-    const userMessage: Message = { id: Date.now(), role: "user", content: trimmedQuery };
-    setConversation((prev) => [...prev, userMessage]);
+    const userMessage: Message = { id: Date.now(), role: "user", content: trimmedInput };
+    const nextConversation = [...conversation, userMessage];
+    setConversation(nextConversation);
+    setChatInput("");
 
     try {
       const response = await fetch(`${API_BASE_URL}/search/query`, {
@@ -90,18 +91,16 @@ function App() {
           "Content-Type": "application/json",
           ...headers,
         },
-        body: JSON.stringify({ query: trimmedQuery, top_k: 5 }),
+        body: JSON.stringify({ query: trimmedInput, top_k: 5, history: nextConversation }),
       });
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.detail ?? "Search failed");
       const assistantText = typeof payload.response === "string" ? payload.response : JSON.stringify(payload.response ?? "", null, 2);
       const consultedFiles = (payload.sources_consulted ?? []).map((source: Source) => source.source_file);
-      setAnswer(assistantText);
       setSources(payload.sources_consulted ?? []);
       setAvailableFiles((prev) => Array.from(new Set([...prev, ...consultedFiles])));
       setStatus(`Search completed with ${payload.access_clearance_applied} clearance.`);
       setConversation((prev) => [...prev, { id: Date.now() + 1, role: "assistant", content: assistantText }]);
-      setQuery("");
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Search failed";
       setStatus(errorMessage);
@@ -157,24 +156,23 @@ function App() {
           </button>
         </form>
 
-        <form className="panel searchPanel" onSubmit={searchDocuments}>
+        <section className="panel answerPanel">
           <div className="panelHeader">
-            <Search size={20} />
-            <h2>Query</h2>
+            <LockKeyhole size={20} />
+            <h2>Authorized Answer</h2>
           </div>
-          <label>
-            Active clearance
-            <select value={clearance} onChange={(event) => setClearance(event.target.value as Classification)}>
-              <option>Public</option>
-              <option>Student-Only</option>
-              <option>Restricted-Internal</option>
-            </select>
-          </label>
-          <textarea value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Ask about your lecture notes, syllabus, or readings..." />
-          <button disabled={busy || !query.trim()}>
-            <Search size={16} />
-            Ask Ollama
-          </button>
+
+          <div className="controlRow">
+            <label>
+              Active clearance
+              <select value={clearance} onChange={(event) => setClearance(event.target.value as Classification)}>
+                <option>Public</option>
+                <option>Student-Only</option>
+                <option>Restricted-Internal</option>
+              </select>
+            </label>
+          </div>
+
           <div className="referencePanel">
             <div className="panelHeader compact">
               <Files size={16} />
@@ -190,13 +188,7 @@ function App() {
               <p className="helperText">Upload documents to make them available as reference sources.</p>
             )}
           </div>
-        </form>
 
-        <section className="panel answerPanel">
-          <div className="panelHeader">
-            <LockKeyhole size={20} />
-            <h2>Authorized Answer</h2>
-          </div>
           <div className="chatWindow">
             {conversation.length > 0 ? (
               conversation.map((message) => (
@@ -217,6 +209,7 @@ function App() {
               </div>
             )}
           </div>
+
           {sources.length > 0 && (
             <div className="sourcesPanel">
               <h3>Sources consulted</h3>
@@ -229,6 +222,19 @@ function App() {
               </div>
             </div>
           )}
+
+          <form className="composer" onSubmit={sendMessage}>
+            <textarea
+              value={chatInput}
+              onChange={(event) => setChatInput(event.target.value)}
+              placeholder="Continue the conversation with Ollama..."
+              rows={2}
+            />
+            <button type="submit" disabled={busy || !chatInput.trim()}>
+              <Send size={16} />
+              Send
+            </button>
+          </form>
         </section>
       </section>
     </main>

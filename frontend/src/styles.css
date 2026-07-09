@@ -4,9 +4,9 @@
 
 body {
   margin: 0;
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  background: #f4f7f6;
-  color: #17211f;
+  font-family: "Garamond", "Palatino Linotype", "Book Antiqua", serif;
+  background: #f8efe6;
+  color: #3f2a18;
 }
 
 .shell {
@@ -24,30 +24,32 @@ body {
 }
 
 .eyebrow {
-  color: #49645e;
+  color: #8b4a1e;
   font-size: 13px;
   font-weight: 700;
   margin: 0 0 8px;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+  color: #6d3413;
 }
 
 h1 {
   font-size: 36px;
   line-height: 1.1;
-  margin: 0;
-}
-
-h2,
-h3 {
-  margin: 0;
 }
 
 .status {
   align-items: center;
-  background: #ffffff;
-  border: 1px solid #d8e3df;
-  border-radius: 8px;
-  color: #25433c;
+  background: #fff9f1;
+  border: 1px solid #d7b18d;
+  border-radius: 10px;
+  color: #7a4319;
   display: flex;
   gap: 10px;
   max-width: 440px;
@@ -57,15 +59,16 @@ h3 {
 .grid {
   display: grid;
   gap: 18px;
-  grid-template-columns: minmax(260px, 0.85fr) minmax(340px, 1.15fr);
+  grid-template-columns: minmax(260px, 0.8fr) minmax(360px, 1.2fr);
   margin: 0 auto;
   max-width: 1180px;
 }
 
 .panel {
-  background: #ffffff;
-  border: 1px solid #d8e3df;
-  border-radius: 8px;
+  background: #fff9f1;
+  border: 1px solid #e6c8a5;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(101, 58, 26, 0.06);
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -83,7 +86,7 @@ h3 {
 }
 
 label {
-  color: #304d47;
+  color: #7a4319;
   display: grid;
   font-size: 13px;
   font-weight: 700;
@@ -93,25 +96,26 @@ label {
 input,
 select,
 textarea {
-  border: 1px solid #c7d5d1;
-  border-radius: 6px;
-  color: #17211f;
+  border: 1px solid #d7b18d;
+  border-radius: 8px;
+  color: #3f2a18;
   font: inherit;
   padding: 11px 12px;
   width: 100%;
+  background: #fffdf9;
 }
 
 textarea {
-  min-height: 145px;
+  min-height: 74px;
   resize: vertical;
 }
 
 button {
   align-items: center;
-  background: #146c5a;
+  background: #a85b2a;
   border: 0;
-  border-radius: 6px;
-  color: #ffffff;
+  border-radius: 8px;
+  color: #fffdf8;
   cursor: pointer;
   display: inline-flex;
   font: inherit;
@@ -123,23 +127,32 @@ button {
 }
 
 button:disabled {
-  background: #8ba39d;
+  background: #c79a73;
   cursor: not-allowed;
 }
 
 .answerPanel {
-  grid-column: 1 / -1;
+  display: flex;
+  min-height: 620px;
+}
+
+.controlRow {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .chatWindow {
-  background: #f7fbfa;
-  border: 1px solid #dce9e4;
-  border-radius: 10px;
+  background: #fdf5ea;
+  border: 1px solid #e7d0b2;
+  border-radius: 12px;
   display: flex;
+  flex: 1;
   flex-direction: column;
   gap: 12px;
   min-height: 240px;
   padding: 16px;
+  overflow-y: auto;
 }
 
 .message {
@@ -153,24 +166,25 @@ button:disabled {
 }
 
 .messageMeta {
-  color: #4f6d67;
+  color: #8b4a1e;
   font-size: 12px;
   font-weight: 700;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
 .messageBody {
-  background: #ffffff;
-  border: 1px solid #dce9e4;
+  background: #fffdf9;
+  border: 1px solid #e7d0b2;
   border-radius: 12px;
-  box-shadow: 0 1px 2px rgba(15, 34, 31, 0.05);
+  box-shadow: 0 1px 2px rgba(101, 58, 26, 0.05);
   max-width: 90%;
   padding: 12px 14px;
 }
 
 .message.user .messageBody {
-  background: #146c5a;
-  color: #ffffff;
+  background: #a85b2a;
+  color: #fffdf8;
 }
 
 .messageBody p {
@@ -185,7 +199,7 @@ button:disabled {
 }
 
 .messageBody pre {
-  background: #0f1f1b;
+  background: #3f2a18;
   border-radius: 8px;
   overflow-x: auto;
   padding: 10px 12px;
@@ -204,7 +218,7 @@ button:disabled {
 }
 
 .answer {
-  color: #273b37;
+  color: #6d3413;
   line-height: 1.6;
   margin: 0;
   min-height: 88px;
@@ -213,9 +227,9 @@ button:disabled {
 
 .referencePanel,
 .sourcesPanel {
-  background: #f9fcfb;
-  border: 1px solid #e2ece8;
-  border-radius: 8px;
+  background: #fcf3e8;
+  border: 1px solid #e8cfb3;
+  border-radius: 10px;
   padding: 12px;
 }
 
@@ -227,12 +241,12 @@ button:disabled {
 }
 
 .referenceList li {
-  color: #25433c;
+  color: #6d3413;
   font-size: 13px;
 }
 
 .helperText {
-  color: #56756f;
+  color: #8b4a1e;
   font-size: 13px;
   margin: 0;
 }
@@ -252,13 +266,24 @@ button:disabled {
 
 .fileList span,
 .sources span {
-  background: #e8f1ee;
-  border: 1px solid #c8d9d4;
+  background: #f5e4d1;
+  border: 1px solid #e2bf95;
   border-radius: 999px;
-  color: #25433c;
+  color: #6d3413;
   font-size: 12px;
   font-weight: 700;
   padding: 6px 10px;
+}
+
+.composer {
+  align-items: flex-end;
+  display: flex;
+  gap: 10px;
+  margin-top: auto;
+}
+
+.composer textarea {
+  min-height: 56px;
 }
 
 @media (max-width: 800px) {
@@ -282,5 +307,9 @@ button:disabled {
 
   .messageBody {
     max-width: 100%;
+  }
+
+  .composer {
+    flex-direction: column;
   }
 }

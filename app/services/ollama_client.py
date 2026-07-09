@@ -7,21 +7,33 @@ class OllamaClient:
         self.client_url = f"{settings.OLLAMA_BASE_URL}/api/generate"
         self.embedding_url = f"{settings.OLLAMA_BASE_URL}/api/embeddings"
 
-    async def generate_response(self, prompt: str, context: str) -> str:
+    async def generate_response(self, prompt: str, context: str, conversation_history: list[dict] | None = None) -> str:
         """
         Sends the isolated context along with the user prompt to the local LLM.
         """
+        history_block = ""
+        if conversation_history:
+            history_lines = []
+            for message in conversation_history:
+                role = str(message.get("role", "user")).capitalize()
+                content = str(message.get("content", "")).strip()
+                if content:
+                    history_lines.append(f"{role}: {content}")
+            if history_lines:
+                history_block = "Conversation history:\n" + "\n".join(history_lines) + "\n\n"
+
         system_instructions = (
             "You are an enterprise AI assistant. Answer the user's question using ONLY "
             "the provided authorized document context. If the context doesn't contain the answer, "
             "state clearly that you do not have permission or context to answer.\n\n"
+            f"{history_block}"
             f"Context:\n{context}"
         )
 
         payload = {
             "model": settings.OLLAMA_MODEL,
             "prompt": f"{system_instructions}\n\nUser Question: {prompt}",
-            "stream": False
+            "stream": False,
         }
 
         try:
