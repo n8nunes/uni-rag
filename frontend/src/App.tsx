@@ -1,5 +1,4 @@
-import React, { FormEvent, useMemo, useState } from "react";
-import { createRoot } from "react-dom/client";
+import { FormEvent, useMemo, useState } from "react";
 import { FileUp, LockKeyhole, Search, ShieldCheck } from "lucide-react";
 import "./styles.css";
 
@@ -157,4 +156,4 @@ function App() {
   );
 }
 
-createRoot(document.getElementById("root")!).render(<App />);
+export default App;
