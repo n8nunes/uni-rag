@@ -141,6 +141,13 @@ button:disabled {
   gap: 8px;
 }
 
+.fileList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.fileList span,
 .sources span {
   background: #e8f1ee;
   border: 1px solid #c8d9d4;

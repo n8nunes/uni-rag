@@ -13,7 +13,7 @@ type Source = {
 };
 
 function App() {
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
   const [classification, setClassification] = useState<Classification>("Student-Only");
   const [clearance, setClearance] = useState<Classification>("Student-Only");
   const [query, setQuery] = useState("");
@@ -33,12 +33,13 @@ function App() {
 
   async function uploadDocument(event: FormEvent) {
     event.preventDefault();
-    if (!file) return;
+    const form = event.currentTarget as HTMLFormElement;
+    if (files.length === 0) return;
 
     setBusy(true);
-    setStatus("Parsing PDF, generating embeddings, and storing classified chunks.");
+    setStatus("Parsing documents, generating embeddings, and storing classified chunks.");
     const formData = new FormData();
-    formData.append("file", file);
+    files.forEach((file) => formData.append("files", file));
     formData.append("classification", classification);
 
     try {
@@ -49,7 +50,9 @@ function App() {
       });
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.detail ?? "Upload failed");
-      setStatus(`Indexed ${payload.chunks_extracted} chunks from ${payload.file_name}.`);
+      setStatus(`Indexed ${payload.chunks_extracted} chunks from ${payload.file_count} file(s).`);
+      setFiles([]);
+      form.reset();
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Upload failed");
     } finally {
@@ -102,7 +105,19 @@ function App() {
             <FileUp size={20} />
             <h2>Ingest</h2>
           </div>
-          <input type="file" accept="application/pdf" onChange={(event) => setFile(event.target.files?.[0] ?? null)} />
+          <input
+            type="file"
+            accept="application/pdf,.pdf,text/markdown,.md,.markdown"
+            multiple
+            onChange={(event) => setFiles(Array.from(event.target.files ?? []))}
+          />
+          {files.length > 0 && (
+            <div className="fileList">
+              {files.map((selectedFile) => (
+                <span key={`${selectedFile.name}-${selectedFile.size}`}>{selectedFile.name}</span>
+              ))}
+            </div>
+          )}
           <label>
             Classification
             <select value={classification} onChange={(event) => setClassification(event.target.value as Classification)}>
@@ -111,9 +126,9 @@ function App() {
               <option>Restricted-Internal</option>
             </select>
           </label>
-          <button disabled={busy || !file}>
+          <button disabled={busy || files.length === 0}>
             <FileUp size={16} />
-            Index PDF
+            Index Files
           </button>
         </form>
 
@@ -146,7 +161,7 @@ function App() {
           <div className="sources">
             {sources.map((source) => (
               <span key={`${source.source_file}-${source.score}`}>
-                {source.source_file} · {source.classification}
+                {source.source_file} - {source.classification}
               </span>
             ))}
           </div>

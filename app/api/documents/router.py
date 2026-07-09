@@ -1,4 +1,5 @@
 from fastapi import APIRouter, UploadFile, File, Form, Depends, HTTPException, status
+from typing import List
 from app.models.schemas import ClassificationEnum, UserSession, DocumentMetadata
 from app.services.chunking import DocumentProcessor
 from app.services.vector_db import vector_db
@@ -7,17 +8,18 @@ from app.api.dependencies import get_current_user
 
 router = APIRouter(prefix="/documents", tags=["Document Ingestion"])
 
+SUPPORTED_EXTENSIONS = (".pdf", ".md", ".markdown")
+
 @router.post("/upload", status_code=status.HTTP_201_CREATED)
 async def upload_document(
-    file: UploadFile = File(...),
+    files: List[UploadFile] = File(...),
     classification: ClassificationEnum = Form(...),
     current_user: UserSession = Depends(get_current_user)
 ):
-    # Verify File Type Extensions
-    if not file.filename or not file.filename.lower().endswith(".pdf"):
+    if not files:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, 
-            detail="Unsupported File Type. System mandates PDF processing."
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="At least one document must be uploaded.",
         )
 
     # Enforce Governance Check: Users cannot tag documents above their clearance level
@@ -33,37 +35,64 @@ async def upload_document(
             detail="Authorization Failure: Target classification exceeds user clearance parameters."
         )
 
-    # Read binary file contents
-    file_bytes = await file.read()
-    
-    # Construct Immutable Audit Records
-    doc_metadata = DocumentMetadata(
-        source_file=file.filename,
-        classification=classification,
-        uploaded_by=current_user.user_id
-    )
-    
-    # Execute Asynchronous Parsing Core Engine
-    processed_chunks = await DocumentProcessor.extract_and_chunk_pdf(file_bytes, doc_metadata)
-    await vector_db.upsert_chunks(processed_chunks)
-    
-    # SOC 2 Audit Trail Tracking Emitted to Stdout/Collector
-    audit_logger.info(
-        f"Document successfully processed and tokenized.",
-        extra={
-            "extra_context": {
-                "event": "DOCUMENT_INGESTION_SUCCESS",
-                "filename": file.filename,
-                "chunks_generated": len(processed_chunks),
-                "classification": classification,
-                "operator": current_user.user_id
+    processed_results = []
+    all_chunks = []
+
+    for file in files:
+        filename = file.filename or ""
+        if not filename.lower().endswith(SUPPORTED_EXTENSIONS):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Unsupported file type for {filename or 'uploaded file'}. Supported types: PDF, MD, Markdown.",
+            )
+
+        file_bytes = await file.read()
+        if not file_bytes:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"{filename} is empty.",
+            )
+
+        doc_metadata = DocumentMetadata(
+            source_file=filename,
+            classification=classification,
+            uploaded_by=current_user.user_id,
+        )
+
+        processed_chunks = await DocumentProcessor.extract_and_chunk_file(filename, file_bytes, doc_metadata)
+        if not processed_chunks:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"No extractable text found in {filename}.",
+            )
+
+        all_chunks.extend(processed_chunks)
+        processed_results.append(
+            {
+                "file_name": filename,
+                "chunks_extracted": len(processed_chunks),
             }
-        }
-    )
-    
+        )
+
+        audit_logger.info(
+            "Document successfully processed and tokenized.",
+            extra={
+                "extra_context": {
+                    "event": "DOCUMENT_INGESTION_SUCCESS",
+                    "filename": filename,
+                    "chunks_generated": len(processed_chunks),
+                    "classification": classification,
+                    "operator": current_user.user_id,
+                }
+            },
+        )
+
+    await vector_db.upsert_chunks(all_chunks)
+
     return {
         "message": "Processing executed successfully",
-        "file_name": file.filename,
-        "chunks_extracted": len(processed_chunks),
-        "security_policy_applied": classification
+        "files_processed": processed_results,
+        "file_count": len(processed_results),
+        "chunks_extracted": len(all_chunks),
+        "security_policy_applied": classification,
     }

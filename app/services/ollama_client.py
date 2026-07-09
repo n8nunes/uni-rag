@@ -25,7 +25,7 @@ class OllamaClient:
         }
 
         try:
-            async with httpx.AsyncClient(timeout=30.0) as client:
+            async with httpx.AsyncClient(timeout=settings.OLLAMA_REQUEST_TIMEOUT_SECONDS) as client:
                 response = await client.post(self.client_url, json=payload)
                 if response.status_code == 200:
                     return response.json().get("response", "No response generated.")
@@ -33,6 +33,15 @@ class OllamaClient:
         except httpx.ConnectError:
             audit_logger.error("Failed to connect to Ollama. Verify the service is running locally.")
             return "AI Engine is currently unreachable. Please verify local environment status."
+        except httpx.TimeoutException:
+            audit_logger.error("Timed out waiting for Ollama to generate a response.")
+            return (
+                "AI Engine timed out while generating the answer. The documents were retrieved, "
+                "but the local Ollama model did not respond before the timeout."
+            )
+        except httpx.RequestError as exc:
+            audit_logger.error(f"Ollama request failed: {exc}")
+            return "AI Engine request failed. Please verify local Ollama status."
 
     async def embed_text(self, text: str) -> list[float]:
         payload = {
@@ -40,7 +49,7 @@ class OllamaClient:
             "prompt": text,
         }
 
-        async with httpx.AsyncClient(timeout=30.0) as client:
+        async with httpx.AsyncClient(timeout=settings.OLLAMA_REQUEST_TIMEOUT_SECONDS) as client:
             response = await client.post(self.embedding_url, json=payload)
             response.raise_for_status()
             embedding = response.json().get("embedding")
